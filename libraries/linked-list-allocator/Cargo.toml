@@ -18,3 +18,7 @@ use_spin = ["spin"]
 [dependencies.spin]
 version = "0.5.0"
 optional = true
+
+[dependencies.allocator_api]
+path = "../allocator_api"
+default-features = false

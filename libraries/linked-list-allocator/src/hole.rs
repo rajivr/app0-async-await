@@ -60,6 +60,23 @@ impl HoleList {
         })
     }
 
+    pub fn allocator_api_allocate_first_fit(
+        &mut self,
+        layout: Layout,
+    ) -> Result<NonNull<u8>, allocator_api::AllocErr> {
+        assert!(layout.size() >= Self::min_size());
+
+        allocator_api_allocate_first_fit(&mut self.first, layout).map(|allocation| {
+            if let Some(padding) = allocation.front_padding {
+                deallocate(&mut self.first, padding.addr, padding.size);
+            }
+            if let Some(padding) = allocation.back_padding {
+                deallocate(&mut self.first, padding.addr, padding.size);
+            }
+            NonNull::new(allocation.info.addr as *mut u8).unwrap()
+        })
+    }
+
     /// Frees the allocation given by `ptr` and `layout`. `ptr` must be a pointer returned by a call
     /// to the `allocate_first_fit` function with identical layout. Undefined behavior may occur for
     /// invalid arguments.
@@ -208,6 +225,33 @@ fn allocate_first_fit(mut previous: &mut Hole, layout: Layout) -> Result<Allocat
             None => {
                 // this was the last hole, so no hole is big enough -> allocation not possible
                 return Err(AllocErr);
+            }
+        }
+    }
+}
+
+fn allocator_api_allocate_first_fit(
+    mut previous: &mut Hole,
+    layout: Layout,
+) -> Result<Allocation, allocator_api::AllocErr> {
+    loop {
+        let allocation: Option<Allocation> = previous
+            .next
+            .as_mut()
+            .and_then(|current| split_hole(current.info(), layout.clone()));
+        match allocation {
+            Some(allocation) => {
+                // hole is big enough, so remove it from the list by updating the previous pointer
+                previous.next = previous.next.as_mut().unwrap().next.take();
+                return Ok(allocation);
+            }
+            None if previous.next.is_some() => {
+                // try next hole
+                previous = move_helper(previous).next.as_mut().unwrap();
+            }
+            None => {
+                // this was the last hole, so no hole is big enough -> allocation not possible
+                return Err(allocator_api::AllocErr);
             }
         }
     }

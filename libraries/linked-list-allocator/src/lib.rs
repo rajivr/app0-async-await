@@ -1,5 +1,5 @@
 #![feature(const_fn)]
-#![feature(alloc, allocator_api)]
+#![feature(allocator_api)]
 #![no_std]
 
 #[cfg(test)]
@@ -11,8 +11,10 @@ extern crate spin;
 
 extern crate alloc;
 
+extern crate allocator_api;
+
 use alloc::alloc::{Alloc, AllocErr, Layout};
-use core::alloc::{GlobalAlloc};
+use core::alloc::GlobalAlloc;
 use core::mem;
 #[cfg(feature = "use_spin")]
 use core::ops::Deref;
@@ -82,6 +84,20 @@ impl Heap {
         self.holes.allocate_first_fit(layout)
     }
 
+    pub fn allocator_api_allocate_first_fit(
+        &mut self,
+        layout: Layout,
+    ) -> Result<NonNull<u8>, allocator_api::AllocErr> {
+        let mut size = layout.size();
+        if size < HoleList::min_size() {
+            size = HoleList::min_size();
+        }
+        let size = align_up(size, mem::align_of::<Hole>());
+        let layout = Layout::from_size_align(size, layout.align()).unwrap();
+
+        self.holes.allocator_api_allocate_first_fit(layout)
+    }
+
     /// Frees the given allocation. `ptr` must be a pointer returned
     /// by a call to the `allocate_first_fit` function with identical size and alignment. Undefined
     /// behavior may occur for invalid arguments, thus this function is unsafe.
@@ -132,6 +148,16 @@ impl Heap {
 unsafe impl Alloc for Heap {
     unsafe fn alloc(&mut self, layout: Layout) -> Result<NonNull<u8>, AllocErr> {
         self.allocate_first_fit(layout)
+    }
+
+    unsafe fn dealloc(&mut self, ptr: NonNull<u8>, layout: Layout) {
+        self.deallocate(ptr, layout)
+    }
+}
+
+unsafe impl allocator_api::Alloc for Heap {
+    unsafe fn alloc(&mut self, layout: Layout) -> Result<NonNull<u8>, allocator_api::AllocErr> {
+        self.allocator_api_allocate_first_fit(layout)
     }
 
     unsafe fn dealloc(&mut self, ptr: NonNull<u8>, layout: Layout) {
