@@ -1,4 +1,8 @@
 #![no_std]
+#![feature(
+    unsize,
+    coerce_unsized,
+)]
 
 #[cfg(feature = "std")]
 macro_rules! global_alloc {

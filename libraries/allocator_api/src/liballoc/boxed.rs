@@ -11,10 +11,10 @@ use core::convert::From;
 use core::fmt;
 use core::hash::{Hash, Hasher};
 use core::iter::{Iterator, FusedIterator};
-use core::marker::{PhantomData, Unpin};
+use core::marker::{PhantomData, Unpin, Unsize};
 use core::mem;
 use core::pin::Pin;
-use core::ops::{Deref, DerefMut};
+use core::ops::{Deref, DerefMut, CoerceUnsized};
 use core::ptr::{self, NonNull};
 
 use crate::alloc::{Alloc, Layout, handle_alloc_error};
@@ -347,6 +347,8 @@ impl<T: ?Sized, A: Alloc> Drop for Box<T, A> {
         }
     }
 }
+
+impl<T: ?Sized + Unsize<U>, U: ?Sized, A: Alloc> CoerceUnsized<Box<U, A>> for Box<T, A> {}
 
 impl<T: Default, A: Alloc + Default> Default for Box<T, A> {
     /// Creates a `Box<T>`, with the `Default` value for T.
