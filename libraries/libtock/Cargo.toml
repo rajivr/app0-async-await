@@ -1,0 +1,19 @@
+[package]
+name = "tock"
+version = "0.1.0"
+authors = ["Rajiv Ranganath <rajiv.ranganath@atihita.com>"]
+edition = "2018"
+
+[dependencies.futures-core-preview]
+version = "0.3.0-alpha.16"
+default-features = false
+
+[dependencies.allocator_api]
+path = "../allocator_api"
+default-features = false
+
+[dependencies.linked_list_allocator]
+path = "../linked-list-allocator"
+
+[dependencies.heapless]
+path = "../heapless"
