@@ -1,0 +1,33 @@
+[package]
+name = "app"
+version = "0.1.0"
+authors = ["Rajiv Ranganath <rajiv.ranganath@atihita.com>"]
+edition = "2018"
+
+[profile.dev]
+panic = "abort"
+lto = false
+opt-level = "z"
+debug = true
+
+[profile.release]
+panic = "abort"
+lto = true
+opt-level = "z"
+debug = true
+
+[dependencies]
+embrio-async = { path = "../libraries/embrio-async" }
+embrio-executor = { path = "../libraries/embrio-executor" }
+tock = { path = "../libraries/libtock" }
+pin-utils = "0.1.0-alpha.4"
+
+[dependencies.futures-util-preview]
+version = "0.3.0-alpha.14"
+default-features = false
+features = ["nightly"]
+
+[dependencies.futures-core-preview]
+version = "0.3.0-alpha.14"
+default-features = false
+features = ["nightly"]
